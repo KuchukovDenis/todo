@@ -32,35 +32,53 @@ const DeleteButton = styled.button`
   margin: 20px auto 10px;
 `;
 
+// Компонент для редактирования задачи
 const EditTask = (props) => {
+    // Хук для работы с QueryClient из React Query
     const queryClient = useQueryClient();
 
+    // Обработчик клика по фону для предотвращения закрытия модального окна
     const handleBackdropClick = (event) => {
         event.stopPropagation();
     };
 
-    // Загружаем текст выбранной задачи в инпут при монтировании компонента
+    // Эффект, запускающийся при монтировании компонента, загружает текст выбранной задачи в инпут
     useEffect(() => {
+        // Получаем текущий массив задач из локального хранилища или создаем новый, если он отсутствует
         const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        // Пытаемся найти задачу с заданным ID, но результат не используется
         tasks.find((task) => task.id === props.taskId);
     }, [props.taskId]);
 
-    const mutationDeleteTask = useMutation(async (taskId) => {
-        const existingTasks = JSON.parse(localStorage.getItem('tasks')) || [];
-        const updatedTasks = existingTasks.filter((task) => task.id !== taskId);
-        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-        return updatedTasks;
-    }, {
-        onSuccess: (data) => {
-            queryClient.setQueryData('tasks', data);
-            props.close();
+    // Хук React Query для удаления задачи с использованием мутации
+    const mutationDeleteTask = useMutation(
+        // Асинхронная функция, удаляющая задачу из локального хранилища
+        async (taskId) => {
+            const existingTasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            // Создаем новый массив задач, исключая задачу с заданным ID
+            const updatedTasks = existingTasks.filter((task) => task.id !== taskId);
+            // Обновляем локальное хранилище новым массивом задач
+            localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+            // Возвращаем обновленный массив задач
+            return updatedTasks;
         },
-    });
+        {
+            // Обновляем данные в QueryClient после успешного выполнения мутации
+            onSuccess: (data) => {
+                queryClient.setQueryData('tasks', data);
+                // Закрываем модальное окно после удаления задачи
+                props.close();
+            },
+        }
+    );
 
+    // Обработчик клика по кнопке "Удалить"
     const handleDeleteClick = () => {
+        // Вызываем мутацию для удаления задачи и передаем ID задачи
         mutationDeleteTask.mutate(props.taskId);
     };
 
+    // Возвращаем JSX для отображения модального окна удаления задачи
     return (
         <Backdrop onClick={handleBackdropClick}>
             <Content>
@@ -71,4 +89,6 @@ const EditTask = (props) => {
     );
 };
 
+// Экспортируем компонент для использования в других частях приложения
 export default EditTask;
+

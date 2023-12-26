@@ -31,16 +31,23 @@ const SaveButton = styled.button`
   padding: 4px;
 `;
 
+// Компонент для редактирования существующей задачи
 const EditTask = (props) => {
+    // Хук для работы с QueryClient из React Query
     const queryClient = useQueryClient();
+    // Состояние для хранения текста редактируемой задачи
     const [editedText, setEditedText] = useState('');
 
+    // Обработчик клика по фону для предотвращения закрытия модального окна
     const handleBackdropClick = (event) => {
         event.stopPropagation();
     };
 
+    // Эффект, запускающийся при изменении ID редактируемой задачи
     useEffect(() => {
+        // Получаем текущий массив задач из локального хранилища или создаем новый, если он отсутствует
         const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        // Находим выбранную задачу по её ID и устанавливаем её текст в состояние
         const selectedTask = tasks.find((task) => task.id === props.taskId);
 
         if (selectedTask) {
@@ -48,31 +55,42 @@ const EditTask = (props) => {
         }
     }, [props.taskId]);
 
+    // Обработчик изменения текста в поле ввода
     const handleInputChange = (event) => {
         setEditedText(event.target.value);
     };
 
+    // Хук React Query для обновления текста задачи с использованием мутации
     const mutationUpdateText = useMutation(
+        // Асинхронная функция, обновляющая текст задачи в локальном хранилище
         async ({ taskId, newText }) => {
             const existingTasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            // Создаем новый массив задач, обновляя текст выбранной задачи
             const updatedTasks = existingTasks.map((task) =>
                 task.id === taskId ? { ...task, text: newText } : task
             );
+            // Обновляем локальное хранилище новым массивом задач
             localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+            // Возвращаем обновленный массив задач
             return updatedTasks;
         },
         {
+            // Обновляем данные в QueryClient после успешного выполнения мутации
             onSuccess: (data) => {
                 queryClient.setQueryData('tasks', data);
             },
         }
     );
 
+    // Обработчик клика по кнопке "Сохранить изменения"
     const handleSaveClick = () => {
+        // Вызываем мутацию для обновления текста задачи и передаем ID и новый текст
         mutationUpdateText.mutate({ taskId: props.taskId, newText: editedText });
+        // Закрываем модальное окно редактирования
         props.close();
     };
 
+    // Возвращаем JSX для отображения модального окна редактирования задачи
     return (
         <Backdrop onClick={handleBackdropClick}>
             <Content>
@@ -89,4 +107,6 @@ const EditTask = (props) => {
     );
 };
 
+// Экспортируем компонент для использования в других частях приложения
 export default EditTask;
+
